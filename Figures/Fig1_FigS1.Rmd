@@ -23,34 +23,41 @@ library(scran)
 library(reshape2)
 
 # Load MCMC chains from all datasets
-MCMCs <- readRDS("/Users/nils/Google Drive File Stream/My Drive/BASiCS_add-on/Analysis/Results/Testing/Tdist/All_datasets.rds")
+#MCMCs <- readRDS("/Users/nils/Google Drive File Stream/My Drive/BASiCS_add-on/Analysis/Results/Testing/Tdist/All_datasets.rds")
 # Select the Dictyostelium dataset
-cur_MCMC <- MCMCs$MCMC_Dict_12_1.2_5_reg.rds
-rm(MCMCs)
+#cur_MCMC <- MCMCs$MCMC_Dict_12_1.2_5_reg.rds
+#rm(MCMCs)
+chains.path <- "~/Documents/OneDrive/Projects/SingleCell/BASiCS/Chains/Regression"
+cur_MCMC <- BASiCS_LoadChain("MCMC_dict", chains.path)
 
 # Show the uncorrected over-dispersion values plotted against mean expression
-uncorrected.fit <- BASiCS_showFit(cur_MCMC) + ylim(c(-5,12)) + xlim(c(-1, 17))
+uncorrected.fit <- BASiCS_showFit(cur_MCMC) + ylim(c(-5,12)) + xlim(c(-2, 12))
 
 # Show the corrected residual over-dispersion values plotted against mean expression
 corrected.fit <- ggplot(data.frame(mu = colMedians(cur_MCMC@parameters$mu),
                              epsilon = colMedians(cur_MCMC@parameters$epsilon))) + 
   geom_hex(aes(log(mu), epsilon), bins = 100) +
   scale_fill_gradientn("", colours = colorRampPalette(c("dark blue", "yellow", "dark red"))(100), guide=FALSE) +
-  xlab("log(mu)") + ylab("epsilon") + theme_minimal(base_size = 15) + xlim(c(-1, 17)) +
+  xlab("log(mu)") + ylab("epsilon") + theme_minimal(base_size = 15) + ylim(c(-4,4)) + xlim(c(-2, 12)) +
   geom_abline(slope = 0, intercept = 0, colour="dark red")
+
+library(cowplot)
+plot_grid(uncorrected.fit, corrected.fit)
 ```
 
 # DM and epsilon values
 
 ```{r}
+setwd("~/Documents/OneDrive/Projects/SingleCell/Datasets/Regression")
 # Create Data object for normalization
 # Read in ERCCs 
-ERCC.conc <- read.table("/Users/nils/Google Drive File Stream/My Drive/BASiCS_add-on/Data/ERCC_conc.txt", header=TRUE, sep = "\t", fill = TRUE)
+ERCC.conc <- read.table("Data/cms_095046.txt", header=TRUE, sep = "\t", fill = TRUE)
+#ERCC.conc <- read.table("/Users/nils/Google Drive File Stream/My Drive/BASiCS_add-on/Data/ERCC_conc.txt", header=TRUE, sep = "\t", fill = TRUE)
 ERCC.num <- matrix(data=NA, nrow=nrow(ERCC.conc), ncol=1)
-ERCC.num[,1] <- (ERCC.conc[,4]*(10^(-18)))*(6.0221417*(10^23))
+ERCC.num[,1] <- (ERCC.conc[,4]*(10^(-18)))*(6.0221417*(10^23))*6.7e-3
 
 # Dictyostelium data
-input.dict <- read.table("/Users/nils/Google Drive File Stream/My Drive/BASiCS_add-on/Data/Test_Data/Dictyostelium.txt", sep = "\t")
+input.dict <- read.table("Data/Test_Data/Dictyostelium.txt", sep = "\t")
 # Select first time point
 input.dict <- input.dict[,grepl("X0h", colnames(input.dict))]
 chips <- sapply(colnames(input.dict), function(n){unlist(strsplit(n, "_"))[1]})
@@ -77,7 +84,7 @@ CV2 <- apply(Norm_counts[!grepl("ERCC", rownames(Norm_counts)),], 1, function(n)
 })
 
 # Compute DM
-DM <- DM(mean = rowMeans(Norm_counts[!grepl("ERCC", rownames(Norm_counts)),]), cv2 = CV2)
+DM <- scran::DM(mean = rowMeans(Norm_counts[!grepl("ERCC", rownames(Norm_counts)),]), cv2 = CV2)
 
 # Plot DM - epsilons vs mean expression
 p.Eps <- ggplot(data.frame(Mean = log(colMedians(cur_MCMC@parameters$mu)),
@@ -85,8 +92,9 @@ p.Eps <- ggplot(data.frame(Mean = log(colMedians(cur_MCMC@parameters$mu)),
                            DM = DM)) + 
   geom_point(aes(DM, Epsilon)) + ylim(c(-4,4)) + xlim(c(-1.5,1.5)) 
 cor.test(colMedians(cur_MCMC@parameters$epsilon),DM)
-ggsave("/Users/nils/Dropbox (Personal)/BASiCSplus/Revisions/Epsilon_DM_Reviewer1.pdf",
-       p.Eps)
+p.Eps
+#ggsave("/Users/nils/Dropbox (Personal)/BASiCSplus/Revisions/Epsilon_DM_Reviewer1.pdf",
+#       p.Eps)
 rm(cur_MCMC)
 ```
 
@@ -96,9 +104,10 @@ rm(cur_MCMC)
 # Create final figure
 Fig1 <- plot_grid(NULL, NULL, uncorrected.fit, corrected.fit, ncol = 2, nrow = 2, 
                    align = "vh", labels = "AUTO")
+Fig1
 # Save final figure
-ggsave(filename = "/Users/nils/Google Drive File Stream/My Drive/BASiCS_add-on/Analysis/Manuscript/Figures/Revisions/Fig1.pdf", 
-       plot = Fig1, width = 8, height = 8)
+#ggsave(filename = "/Users/nils/Google Drive File Stream/My Drive/BASiCS_add-on/Analysis/Manuscript/Figures/Revisions/Fig1.pdf", 
+#       plot = Fig1, width = 8, height = 8)
 
 ```
 

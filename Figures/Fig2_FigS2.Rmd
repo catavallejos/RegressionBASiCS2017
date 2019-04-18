@@ -26,7 +26,12 @@ Dictyostelium cells from Antolović et al.
 library(BASiCS)
 library(coda)
 library(cowplot)
-MCMCs <- readRDS("/Users/nils/Google Drive File Stream/My Drive/BASiCS_add-on/Analysis/Results/Testing/Tdist/All_datasets.rds")
+#MCMCs <- readRDS("/Users/nils/Google Drive File Stream/My Drive/BASiCS_add-on/Analysis/Results/Testing/Tdist/All_datasets.rds")
+chains.path <- "~/Documents/OneDrive/Projects/SingleCell/BASiCS/Chains/Regression"
+MCMCs <- list()
+#MCMCs$MCMC_CD4_old <- BASiCS_LoadChain()
+MCMCs$MCMC_Dict <- BASiCS_LoadChain("MCMC_dict", chains.path)
+MCMCs$MCMC_Dict_old <- BASiCS_LoadChain("MCMC_old", chains.path)
 ```
 
 ## Figure 2 A

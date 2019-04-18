@@ -2,7 +2,7 @@
 #### Script to preprocess datasets used in this study ####
 ##########################################################
 
-setwd("/Users/nils/Google Drive File Stream/My Drive/BASiCS_add-on/")
+setwd("~/Documents/OneDrive/Projects/SingleCell/Datasets/Regression")
 library(data.table)
 
 #### CD4 T cell dataset ####
@@ -66,15 +66,23 @@ colnames(Zeisel.ERCC) <- as.character(Zeisel.meta[8,])
 # Look at sizes of cell groups 
 table(as.character(Zeisel.meta[9,]))
 
+Types <- fread("Data/Raw_data/Zeisel/expression_mRNA_17-Aug-2014.txt", 
+                    header = FALSE, sep = "\t", stringsAsFactors = FALSE, 
+                    fill = TRUE)
+Types1 <- t(Types[2,-1])
+Types1 <- Types1[-1]
+Types <- as.numeric(Types1)
+  
+
 # Filter out one cell type for model testing - microglia
-microglia <- Zeisel.bio[,Zeisel.meta[2,] == 5]
+microglia <- Zeisel.bio[,Types == 5]
 ERCC <- Zeisel.ERCC[,colnames(microglia)]
-ERCC <- ERCC[rowSums(ERCC) > 0,]
+#ERCC <- ERCC[rowSums(ERCC) > 0,]
 
 write.table(rbind(microglia, ERCC), "Data/Test_Data/microglia_Zeisel.txt", sep = "\t")
 
 # Another cell type for downsampling - CA1
-CA1 <- Zeisel.bio[,Zeisel.meta[2,] == 3]
+CA1 <- Zeisel.bio[,Types == 3]
 ERCC <- Zeisel.ERCC[,colnames(CA1)]
 
 write.table(rbind(CA1, ERCC), "Data/Test_Data/CA1_Zeisel.txt", sep = "\t")

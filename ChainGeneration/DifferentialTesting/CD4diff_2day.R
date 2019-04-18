@@ -4,6 +4,8 @@
 library(BASiCS)
 setwd("/nfs/research2/marioni/Nils/BASiCS/")
 
+chains.path <- "~/Documents/OneDrive/Projects/SingleCell/BASiCS/Chains/Regression"
+
 #### Read in data
 
 input <- read.table("Data/Test_Data/CD4_diff.txt", sep = "\t")
