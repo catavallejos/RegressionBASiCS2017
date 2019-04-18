@@ -2,7 +2,10 @@
 # Data was taken from Loennberg et al.
 
 library(BASiCS)
-setwd("/nfs/research2/marioni/Nils/BASiCS/")
+#setwd("/nfs/research2/marioni/Nils/BASiCS/")
+setwd("~/Documents/OneDrive/Projects/SingleCell/Datasets/Regression")
+
+chains.path <- "~/Documents/OneDrive/Projects/SingleCell/BASiCS/Chains/Regression"
 
 #### Read in data
 
@@ -12,7 +15,7 @@ input <- read.table("Data/Test_Data/CD4_diff.txt", sep = "\t")
 ERCC.conc <- read.table("Data/Test_Data/ERCC_malaria.txt", header=TRUE, sep = "\t")
 
 ERCC.num <- matrix(data=NA, nrow=nrow(ERCC.conc), ncol=1)
-ERCC.num[,1] <- (ERCC.conc[,2]*(10^(-18)))*(6.0221417*(10^23))
+ERCC.num[,1] <- (ERCC.conc[,2]*(10^(-18)))*(6.0221417*(10^23))*9e-3
 ERCC.num.final <- ERCC.num
 rownames(ERCC.num) <- rownames(ERCC.num.final) <- ERCC.conc[,1]
 
@@ -31,7 +34,9 @@ Data.4day <- newBASiCS_Data(Counts = input, Tech = grepl("ERCC", rownames(input)
 
 #### Run MCMC on these condition
 
-MCMC.4day <- BASiCS_MCMC(Data.4day, 40000, 20, 20000, Regression = TRUE, 
-                         k = 12, Var = 1.2, PrintProgress=FALSE)
+MCMC.4day <- BASiCS_MCMC(Data.4day, 80000, 40, 40000, 
+                         Regression = TRUE, PrintProgress=TRUE,
+                         StoreChains = TRUE, StoreDir = chains.path, 
+                         RunName = "CD4diff_4day_long")
 
-saveRDS(MCMC.4day, "Tdist/Results/Differential_testing/MCMC_CD4diff_4day.rds")
+#saveRDS(MCMC.4day, "Tdist/Results/Differential_testing/MCMC_CD4diff_4day.rds")
