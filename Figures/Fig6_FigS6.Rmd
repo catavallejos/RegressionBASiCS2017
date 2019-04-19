@@ -30,6 +30,26 @@ rownames(mouse.genes) <- mouse.genes[,1]
 ```{r}
 # Read in MCMC chains run on cells from day 2, day 4 and day7 post-infection
 MCMCs <- readRDS("/Users/nils/Google Drive File Stream/My Drive/BASiCS_add-on/Analysis/Results/Differential_testing/All_CD4diff.rds")
+chains.path <- "~/Documents/OneDrive/Projects/SingleCell/BASiCS/Chains/Regression"
+MCMCs <- list()
+MCMCs$day2 <- BASiCS_LoadChain("day2", chains.path)
+MCMCs$day4 <- BASiCS_LoadChain("day4", chains.path)
+MCMCs$day7 <- BASiCS_LoadChain("day7", chains.path)
+
+p2 <- BASiCS_diagPlot(MCMCs$day2)
+p4 <- BASiCS_diagPlot(MCMCs$day4)
+p7 <- BASiCS_diagPlot(MCMCs$day7)
+
+library(cowplot)
+plot_grid(p2, p4, p7, ncol = 3)
+
+ess2 <- BASiCS_effectiveSize(MCMCs$day2, Param = "mu")
+ess4 <- BASiCS_effectiveSize(MCMCs$day4, Param = "mu")
+ess7 <- BASiCS_effectiveSize(MCMCs$day7, Param = "mu")
+
+plot(MCMCs$day2, Param = "mu", Gene = which(ess2 < 5)[1])
+plot(MCMCs$day4, Param = "mu", Gene = which(ess4 < 5)[1])
+plot(MCMCs$day7, Param = "mu", Gene = which(ess7 < 5)[1])
 
 # Perform two sets of tests:
 # 1. Testing on log2FC in mean expression > 1
@@ -38,32 +58,38 @@ MCMCs <- readRDS("/Users/nils/Google Drive File Stream/My Drive/BASiCS_add-on/An
 Test.day2_vs_day4 <- BASiCS_TestDE(Chain1 = MCMCs$day4, Chain2 = MCMCs$day2, 
                                    EpsilonM = 1, OffSet = TRUE, 
                                    GroupLabel2 = "Day2", GroupLabel1 = "Day4",
-                                   Plot = FALSE, PlotOffset = FALSE, OrderVariable = "GeneName")
+                                   Plot = TRUE, PlotOffset = FALSE, OrderVariable = "GeneName",
+                                   EDFR_M = 0.1, EFDR_D = 0.1, EFDR_R = 0.1)
 
 Test.day2_vs_day4.logFC0 <- BASiCS_TestDE(Chain1 = MCMCs$day4, Chain2 = MCMCs$day2, 
                                           EpsilonM = 0, OffSet = TRUE,
                                           GroupLabel2 = "Day2", GroupLabel1 = "Day4",
-                                          Plot = FALSE, PlotOffset = FALSE, OrderVariable = "GeneName")
+                                          Plot = FALSE, PlotOffset = FALSE, OrderVariable = "GeneName",
+                                          EDFR_M = 0.1, EFDR_D = 0.1, EFDR_R = 0.1)
 
 Test.day4_vs_day7 <- BASiCS_TestDE(Chain1 = MCMCs$day7, Chain2 = MCMCs$day4, 
                                    EpsilonM = 1, OffSet = TRUE, 
                                    GroupLabel2 = "Day4", GroupLabel1 = "Day7",
-                                   Plot = FALSE, PlotOffset = FALSE, OrderVariable = "GeneName")
+                                   Plot = FALSE, PlotOffset = FALSE, OrderVariable = "GeneName",
+                                   EDFR_M = 0.1, EFDR_D = 0.1, EFDR_R = 0.1)
 
 Test.day4_vs_day7.logFC0 <- BASiCS_TestDE(Chain1 = MCMCs$day7, Chain2 = MCMCs$day4, 
                                           EpsilonM = 0, OffSet = TRUE,
                                           GroupLabel2 = "Day4", GroupLabel1 = "Day7",
-                                          Plot = FALSE, PlotOffset = FALSE, OrderVariable = "GeneName")
+                                          Plot = FALSE, PlotOffset = FALSE, OrderVariable = "GeneName",
+                                          EDFR_M = 0.1, EFDR_D = 0.1, EFDR_R = 0.1)
 
 Test.day2_vs_day7 <- BASiCS_TestDE(Chain1 = MCMCs$day7, Chain2 = MCMCs$day2, 
                                    EpsilonM = 1, OffSet = TRUE, 
                                    GroupLabel2 = "Day2", GroupLabel1 = "Day7",
-                                   Plot = FALSE, PlotOffset = FALSE, OrderVariable = "GeneName")
+                                   Plot = FALSE, PlotOffset = FALSE, OrderVariable = "GeneName",
+                                   EDFR_M = 0.1, EFDR_D = 0.1, EFDR_R = 0.1)
 
 Test.day2_vs_day7.logFC0 <- BASiCS_TestDE(Chain1 = MCMCs$day7, Chain2 = MCMCs$day2, 
                                    EpsilonM = 0, OffSet = TRUE, 
                                    GroupLabel2 = "Day2", GroupLabel1 = "Day7",
-                                   Plot = FALSE, PlotOffset = FALSE, OrderVariable = "GeneName")
+                                   Plot = FALSE, PlotOffset = FALSE, OrderVariable = "GeneName",
+                                   EDFR_M = 0.1, EFDR_D = 0.1, EFDR_R = 0.1)
 
 
 # Collect genes with statistically significant changes in variability between all comparisons
@@ -136,13 +162,15 @@ Test.day2_vs_day4.sets <- BASiCS_TestDE(Chain1 = MCMCs$day4, Chain2 = MCMCs$day2
                                    EpsilonM = 1, OffSet = TRUE, 
                                    GroupLabel2 = "Day2", GroupLabel1 = "Day4",
                                    Plot = FALSE, PlotOffset = FALSE, OrderVariable = "GeneName",
-                                   GenesSelect = genes)
+                                   GenesSelect = genes,
+                                   EDFR_M = 0.1, EFDR_D = 0.1, EFDR_R = 0.1)
 
 Test.day4_vs_day7.sets <- BASiCS_TestDE(Chain1 = MCMCs$day7, Chain2 = MCMCs$day4, 
                                    EpsilonM = 1, OffSet = TRUE, 
                                    GroupLabel2 = "Day4", GroupLabel1 = "Day7",
                                    Plot = FALSE, PlotOffset = FALSE, OrderVariable = "GeneName",
-                                   GenesSelect = genes)
+                                   GenesSelect = genes,
+                                   EDFR_M = 0.1, EFDR_D = 0.1, EFDR_R = 0.1)
 
 # 1st: up-up
 genenames <- intersect(
