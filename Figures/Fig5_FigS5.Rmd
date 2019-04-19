@@ -32,23 +32,72 @@ library(VennDiagram)
 library(openxlsx)
 
 # Read in mouse genenames  
-mouse.genes <- read.table("/Users/eling01/Google Drive File Stream/My Drive/BASiCS_add-on/Data/Genenames.txt", sep = '\t', header = TRUE, 
+github.path <- "~/Documents/Github/Manuscripts/ImmuneAging2017/Data"
+mouse.genes <- read.table(file.path(github.path, "Genenames.txt"), 
+                          sep = '\t', header = TRUE, 
                           stringsAsFactors = FALSE)
 rownames(mouse.genes) <- mouse.genes[,1]
 
 # Load chains run on naive and activated CD4 T cells
-MCMCs <- readRDS("/Users/eling01/Google Drive File Stream/My Drive/BASiCS_add-on/Analysis/Results/Differential_testing/All_CD4.rds")
+chains.path <- "~/Documents/OneDrive/Projects/SingleCell/BASiCS/Chains/Workflow"
+MCMCs <- list(Naive = readRDS(file.path(chains.path, "MCMC_naive_current.rds")),
+              Active = readRDS(file.path(chains.path, "MCMC_active_current.rds")),
+              Naive0 = readRDS(file.path(chains.path, "MCMC_naive_first.rds")),
+              Active0 = readRDS(file.path(chains.path, "MCMC_active_first.rds")))
+
+par(mfrow = c(1,2))
+smoothScatter(colMedians(MCMCs$Active@parameters$epsilon),
+              colMedians(MCMCs$Active0@parameters$epsilon), main = "Active",
+              xlim = c(-3,2))
+abline(a = 0, b = 1)
+
+smoothScatter(colMedians(MCMCs$Naive@parameters$epsilon),
+              colMedians(MCMCs$Naive0@parameters$epsilon), main = "Naive",
+              xlim = c(-3,2))
+abline(a = 0, b = 1)
+
+par(mfrow = c(1,1))
+plot(colMedians(MCMCs$Active@parameters$epsilon) -
+                colMedians(MCMCs$Naive@parameters$epsilon),
+              colMedians(MCMCs$Active0@parameters$epsilon) -
+                colMedians(MCMCs$Naive0@parameters$epsilon))
+with(Out, points(DistEpsilon.y, DistEpsilon.x, col = "red", pch = 16))
+abline(a = 0, b = 1)
+
+Out[Out$GeneID == "ENSMUSG00000026234",]
+
+aux <- which(colnames(MCMCs$Active@parameters$epsilon) == "ENSMUSG00000026234")
+median(MCMCs$Active@parameters$epsilon[,aux] - MCMCs$Naive@parameters$epsilon[,aux])
+aux <- which(colnames(MCMCs$Active@parameters$epsilon) == "ENSMUSG00000026234")
+median(MCMCs$Active0@parameters$epsilon[,aux] - MCMCs$Naive0@parameters$epsilon[,aux])
+
+
+smoothScatter(log2(colMedians(MCMCs$Active@parameters$mu) /
+                colMedians(MCMCs$Naive@parameters$mu)),
+              log2(colMedians(MCMCs$Active0@parameters$mu) / 
+                colMedians(MCMCs$Naive0@parameters$mu)))
+abline(a = 0, b = 1)
+
+smoothScatter(log2(colMedians(MCMCs$Active@parameters$delta) /
+                colMedians(MCMCs$Naive@parameters$delta)),
+              log2(colMedians(MCMCs$Active0@parameters$delta) / 
+                colMedians(MCMCs$Naive0@parameters$delta)))
+abline(a = 0, b = 1)
+
+  
+#  readRDS("/Users/eling01/Google Drive File Stream/My Drive/BASiCS_add-on/Analysis/Results/Differential_testing/All_CD4.rds")
 
 # Exclude lowly expressed genes 
-genes <- (colMedians(MCMCs$Naive@parameters$mu) > 1 &
-            colMedians(MCMCs$Active@parameters$mu) > 1)
+genesSel <- (colMedians(MCMCs$Naive@parameters$mu) > 0.1 &
+            colMedians(MCMCs$Active@parameters$mu) > 0.1)
 
 # Perform differential testing between naive and activated CD4+ T cells
 
 Test.NaiveActive <- BASiCS_TestDE(Chain1 = MCMCs$Active, Chain2 = MCMCs$Naive, 
-                                  EpsilonM = 1, 
-                                  OffSet = TRUE, GenesSelect = genes, Plot = FALSE, 
-                                  PlotOffset = FALSE)
+                                  EpsilonM = log2(1.5), EpsilonR = 0.35,
+                                  EFDR_M = 0.10, EFDR_D = 0.10, EFDR_R = 0.10,
+                                  OffSet = TRUE, GenesSelect = genesSel, 
+                                  Plot = FALSE, PlotOffset = FALSE)
 
 # Exlude the lowly expressed genes
 Test.NaiveActive$TableResDisp <- Test.NaiveActive$TableResDisp[
@@ -87,9 +136,35 @@ fourGroups <- ggplot(df, aes(Log2FCmu, DistEpsilon)) + geom_point(aes(colour=Reg
 Save this gene list
 
 ```{r}
-df.out <- df[df$Regulation != "Other",]
+#df.out <- df[df$Regulation != "Other",]
+df.out <- df
 df.out <- df.out[order(df.out$Regulation),]
 df.out$Genename <- mouse.genes[rownames(df.out),2] 
+
+# decrease in variability and become up0regulated 
+genes <- c("Ncl", "Polr2l", "Cpsf2", "Sf3a3", "Plrg1")
+aux1 <- df.out[df.out$Genename %in% genes,]
+
+# increase in variability and become up-regulated during
+genes <- c("Fasl", "Smad3", "Pou2f2", "Il2", "Cd274")
+aux2 <- df.out[df.out$Genename %in% genes,]
+
+Test.NaiveActive$TableResDisp[
+  Test.NaiveActive$TableResDisp$GeneName %in% rownames(aux1),]
+Test.NaiveActive$TableResDisp[
+  Test.NaiveActive$TableResDisp$GeneName %in% rownames(aux2),]
+Test.NaiveActive$DiffResDispSummary
+
+TableS2 <- read.csv(file.path(chains.path, "mmc2.csv"))
+Out <- merge(TableS2, df.out, by = "Genename")
+
+with(Out[Out$Regulation.x == "Down-regulated, higher variability",],
+     smoothScatter(DistEpsilon.x, DistEpsilon.y))
+
+with(Out, smoothScatter(DistEpsilon.x, DistEpsilon.y))
+abline(a = 0, b = 1)
+
+smoothScatter(Out$Log2FCmu.x, Out$Log2FCmu.y)
 
 write.xlsx(df.out, "/Users/eling01/Dropbox (Personal)/BASiCSplus/Revisions/TableS2_current.xlsx",
            row.names = TRUE)
